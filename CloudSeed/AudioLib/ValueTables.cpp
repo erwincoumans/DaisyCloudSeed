@@ -5,25 +5,25 @@
 
 namespace AudioLib
 {
-	double ValueTables::Sqrt[TableSize];
-	double ValueTables::Sqrt3[TableSize];
-	double ValueTables::Pow1_5[TableSize];
-	double ValueTables::Pow2[TableSize];
-	double ValueTables::Pow3[TableSize];
-	double ValueTables::Pow4[TableSize];
-	double ValueTables::x2Pow3[TableSize];
+	double DSY_SDRAM_BSS ValueTables::Sqrt[TableSize];
+	double DSY_SDRAM_BSS ValueTables::Sqrt3[TableSize];
+	double DSY_SDRAM_BSS ValueTables::Pow1_5[TableSize];
+	double DSY_SDRAM_BSS ValueTables::Pow2[TableSize];
+	double DSY_SDRAM_BSS ValueTables::Pow3[TableSize];
+	double DSY_SDRAM_BSS ValueTables::Pow4[TableSize];
+	double DSY_SDRAM_BSS ValueTables::x2Pow3[TableSize];
 
 	// octave response. value double every step (2,3,4,5 or 6 steps)
-	double ValueTables::Response2Oct[TableSize];
-	double ValueTables::Response3Oct[TableSize];
-	double ValueTables::Response4Oct[TableSize];
-	double ValueTables::Response5Oct[TableSize];
-	double ValueTables::Response6Oct[TableSize];
+	double DSY_SDRAM_BSS ValueTables::Response2Oct[TableSize];
+	double DSY_SDRAM_BSS ValueTables::Response3Oct[TableSize];
+	double DSY_SDRAM_BSS ValueTables::Response4Oct[TableSize];
+	double DSY_SDRAM_BSS ValueTables::Response5Oct[TableSize];
+	double DSY_SDRAM_BSS ValueTables::Response6Oct[TableSize];
 
 	// decade response, value multiplies by 10 every step
-	double ValueTables::Response2Dec[TableSize];
-	double ValueTables::Response3Dec[TableSize];
-	double ValueTables::Response4Dec[TableSize];
+	double DSY_SDRAM_BSS ValueTables::Response2Dec[TableSize];
+	double DSY_SDRAM_BSS ValueTables::Response3Dec[TableSize];
+	double DSY_SDRAM_BSS ValueTables::Response4Dec[TableSize];
 
 	void ValueTables::Init()
 	{

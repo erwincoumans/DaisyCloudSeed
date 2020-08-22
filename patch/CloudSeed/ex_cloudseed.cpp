@@ -1,14 +1,26 @@
 #include "daisysp.h"
 #include "daisy_patch.h"
 #include <string>
+#include "../../CloudSeed/Default.h"
+#include "../../CloudSeed/ReverbController.h"
+#include "../../CloudSeed/FastSin.h"
+#include "../../CloudSeed/AudioLib/ValueTables.h"
+#include "../../CloudSeed/AudioLib/MathDefs.h"
 
 using namespace daisy;
 using namespace daisysp;
 static DaisyPatch patch;
 static ReverbSc verb;
 static DcBlock blk[2];
-Parameter lpParam;
+::daisy::Parameter lpParam;
 static float drylevel, send;
+
+CloudSeed::ReverbController* reverb = 0;
+
+
+DSY_SDRAM_BSS double delayBuffer[44100];
+DSY_SDRAM_BSS double outputBuffer[44100];
+
 
 static void VerbCallback(float **in, float **out, size_t size)
 {
@@ -53,6 +65,11 @@ int main(void)
     patch.Init();
     samplerate = patch.AudioSampleRate();
 
+    AudioLib::ValueTables::Init();
+    CloudSeed::FastSin::Init();
+    //reverb = new CloudSeed::ReverbController(samplerate);
+    CloudSeed::ReverbChannel*  channelL = new CloudSeed::ReverbChannel(256, samplerate, CloudSeed::ChannelLR::Left, delayBuffer, outputBuffer);
+
     verb.Init(samplerate);
     verb.SetFeedback(0.85f);
     verb.SetLpFreq(18000.0f);
@@ -60,10 +77,10 @@ int main(void)
     blk[0].Init(samplerate);
     blk[1].Init(samplerate);
 
-    lpParam.Init(patch.controls[3], 20, 20000, Parameter::LOGARITHMIC);
+    lpParam.Init(patch.controls[3], 20, 20000, ::daisy::Parameter::LOGARITHMIC);
 
     //briefly display the module name
-    std::string str = "Stereo Reverb";
+    std::string str = "CloudSeed Reverb";
     char* cstr = &str[0];
     patch.display.WriteString(cstr, Font_7x10, true);
     patch.display.Update();
@@ -76,6 +93,7 @@ int main(void)
     {
         UpdateOled();
     }
+
 }
 
 void UpdateOled()

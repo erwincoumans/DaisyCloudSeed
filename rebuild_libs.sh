@@ -8,6 +8,14 @@ echo "only errors, and warnings will output. . . "
 echo "-------------------"
 sleep 1
 
+
+echo "rebuilding libcloudseed"
+cd CloudSeed
+make clean | grep "warningr:\|error:"
+make | grep "warning:r\|error:"
+echo "done building libcloudseed"
+cd "$start_dir"
+
 echo "rebuilding libdaisy"
 cd libdaisy
 make clean | grep "warningr:\|error:"

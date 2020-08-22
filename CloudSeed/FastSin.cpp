@@ -6,5 +6,5 @@
 
 namespace CloudSeed
 {
-	double FastSin::data[FastSin::DataSize];
+	DSY_SDRAM_BSS double FastSin::data[FastSin::DataSize];
 }
