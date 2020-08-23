@@ -45,7 +45,7 @@ static void VerbCallback(float **in, float **out, size_t size)
         // read some controls
         drylevel = patch.GetCtrlValue(patch.CTRL_1);
         send     = patch.GetCtrlValue(patch.CTRL_2);
-
+        //reverb->SetParameter(::Parameter::LineDelay, drylevel);
         // Read Inputs (only stereo in are used)
         dryL = in[0][i];
         dryR = in[1][i];
