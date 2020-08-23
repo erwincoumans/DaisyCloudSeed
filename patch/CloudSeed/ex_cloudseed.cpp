@@ -127,6 +127,10 @@ int main(void)
     CloudSeed::FastSin::Init();
     reverb = new CloudSeed::ReverbController(samplerate);
     reverb->ClearBuffers();
+    //reverb->initFactoryRubiKaFields();
+    //reverb->initFactoryDullEchos();
+    //reverb->initFactoryHyperplane();
+    //reverb->initFactory90sAreBack();
 
     lpParam.Init(patch.controls[3], 20, 20000, ::daisy::Parameter::LOGARITHMIC);
 
