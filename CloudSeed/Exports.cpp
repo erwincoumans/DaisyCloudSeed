@@ -41,17 +41,17 @@ extern "C"
 		return item->GetParameterCount();
 	}
 
-	double* GetAllParameters(ReverbController* item)
+	float* GetAllParameters(ReverbController* item)
 	{
 		return item->GetAllParameters();
 	}
 
-	double GetScaledParameter(ReverbController* item, Parameter param)
+	float GetScaledParameter(ReverbController* item, Parameter param)
 	{
 		return item->GetScaledParameter(param);
 	}
 
-	void SetParameter(ReverbController* item, Parameter param, double value)
+	void SetParameter(ReverbController* item, Parameter param, float value)
 	{
 		item->SetParameter(param, value);
 	}
@@ -61,7 +61,7 @@ extern "C"
 		item->ClearBuffers();
 	}
 
-	void Process(ReverbController* item, double* input, double* output, int bufferSize)
+	void Process(ReverbController* item, float* input, float* output, int bufferSize)
 	{
 		item->Process(input, output, bufferSize);
 	}

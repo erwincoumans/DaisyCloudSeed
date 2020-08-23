@@ -15,24 +15,24 @@ namespace CloudSeed
 		static const int ModulationUpdateRate = 8;
 
 	private:
-		double* delayBuffer;
-		double* output;
+		float* delayBuffer;
+		float* output;
 		int bufferSize;
 		int index;
 		unsigned int samplesProcessed;
 
-		double modPhase;
+		float modPhase;
 		int delayA;
 		int delayB;
-		double gainA;
-		double gainB;
+		float gainA;
+		float gainB;
 
 	public:
 
 		int SampleDelay;
-		double Feedback;
-		double ModAmount;
-		double ModRate;
+		float Feedback;
+		float ModAmount;
+		float ModRate;
 
 		bool InterpolationEnabled;
 		bool ModulationEnabled;
@@ -41,11 +41,11 @@ namespace CloudSeed
 		{
 			this->InterpolationEnabled = true;
 			this->bufferSize = bufferSize;
-			delayBuffer = new (custom_pool_allocate(sizeof(double) * DelayBufferSamples)) double[DelayBufferSamples];
-			output = new (custom_pool_allocate(sizeof(double) * bufferSize)) double[bufferSize];
+			delayBuffer = new (custom_pool_allocate(sizeof(float) * DelayBufferSamples)) float[DelayBufferSamples];
+			output = new (custom_pool_allocate(sizeof(float) * bufferSize)) float[bufferSize];
 			SampleDelay = sampleDelay;
 			index = DelayBufferSamples - 1;
-			modPhase = 0.01 + 0.98 * std::rand() / (double)RAND_MAX;
+			modPhase = 0.01 + 0.98 * std::rand() / (float)RAND_MAX;
 			ModRate = 0.0;
 			ModAmount = 0.0;
 			Update();
@@ -58,7 +58,7 @@ namespace CloudSeed
 		}
 
 
-		inline double* GetOutput()
+		inline float* GetOutput()
 		{
 			return output;
 		}
@@ -69,7 +69,7 @@ namespace CloudSeed
 			Utils::ZeroBuffer(output, bufferSize);
 		}
 
-		void Process(double* input, int sampleCount)
+		void Process(float* input, int sampleCount)
 		{
 			if (ModulationEnabled)
 				ProcessWithMod(input, sampleCount);
@@ -79,7 +79,7 @@ namespace CloudSeed
 
 
 	private:
-		void ProcessNoMod(double* input, int sampleCount)
+		void ProcessNoMod(float* input, int sampleCount)
 		{
 			auto delayedIndex = index - SampleDelay;
 			if (delayedIndex < 0) delayedIndex += DelayBufferSamples;
@@ -100,14 +100,14 @@ namespace CloudSeed
 			}
 		}
 
-		void ProcessWithMod(double* input, int sampleCount)
+		void ProcessWithMod(float* input, int sampleCount)
 		{
 			for (int i = 0; i < sampleCount; i++)
 			{
 				if (samplesProcessed >= ModulationUpdateRate)
 					Update();
 
-				double bufOut;
+				float bufOut;
 
 				if (InterpolationEnabled)
 				{
@@ -135,7 +135,7 @@ namespace CloudSeed
 			}
 		}
 
-		inline double Get(int delay)
+		inline float Get(int delay)
 		{
 			int idx = index - delay;
 			if (idx < 0)

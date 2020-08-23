@@ -35,7 +35,7 @@ namespace CloudSeed
 	private:
 		static const int TotalLineCount = 2;
 
-		map<Parameter, double> parameters;
+		map<Parameter, float> parameters;
 		int samplerate;
 		int bufferSize;
 
@@ -46,9 +46,9 @@ namespace CloudSeed
 		AudioLib::ShaRandom rand;
 		AudioLib::Hp1 highPass;
 		AudioLib::Lp1 lowPass;
-		double* tempBuffer;
-		double* lineOutBuffer;
-		double* outBuffer;
+		float* tempBuffer;
+		float* lineOutBuffer;
+		float* outBuffer;
 		int delayLineSeed;
 		int postDiffusionSeed;
 
@@ -58,11 +58,11 @@ namespace CloudSeed
 		bool highPassEnabled;
 		bool lowPassEnabled;
 		bool diffuserEnabled;
-		double dryOut;
-		double predelayOut;
-		double earlyOut;
-		double lineOut;
-		double crossSeed;
+		float dryOut;
+		float predelayOut;
+		float earlyOut;
+		float lineOut;
+		float crossSeed;
 		ChannelLR channelLr;
 
 	public:
@@ -85,14 +85,14 @@ namespace CloudSeed
 				this->parameters[static_cast<Parameter>(value)] = 0.0;
 
 			crossSeed = 0.0;
-			lineCount = 2;
+			lineCount = TotalLineCount;
 			diffuser.SetInterpolationEnabled(true);
 			highPass.SetCutoffHz(20);
 			lowPass.SetCutoffHz(20000);
 
-			tempBuffer = new  (custom_pool_allocate(sizeof(double)*bufferSize))double[bufferSize];
-			lineOutBuffer = new (custom_pool_allocate(sizeof(double) * bufferSize))double[bufferSize];
-			outBuffer = new (custom_pool_allocate(sizeof(double) * bufferSize))double[bufferSize];
+			tempBuffer = new  (custom_pool_allocate(sizeof(float)*bufferSize))float[bufferSize];
+			lineOutBuffer = new (custom_pool_allocate(sizeof(float) * bufferSize))float[bufferSize];
+			outBuffer = new (custom_pool_allocate(sizeof(float) * bufferSize))float[bufferSize];
 
 			this->samplerate = samplerate;
 		}
@@ -136,17 +136,17 @@ namespace CloudSeed
 			UpdateLines();
 		}
 
-		double* GetOutput()
+		float* GetOutput()
 		{
 			return outBuffer;
 		}
 
-		double* GetLineOutput()
+		float* GetLineOutput()
 		{
 			return lineOutBuffer;
 		}
 
-		void SetParameter(Parameter para, double value)
+		void SetParameter(Parameter para, float value)
 		{
 			parameters[para] = value;
 
@@ -333,7 +333,7 @@ namespace CloudSeed
 			}
 		}
 
-		void Process(double* input, int sampleCount)
+		void Process(float* input, int sampleCount)
 		{
 			int len = sampleCount;
 			auto predelayOutput = preDelay.GetOutput();
@@ -428,7 +428,7 @@ namespace CloudSeed
 
 
 	private:
-		double GetPerLineGain()
+		float GetPerLineGain()
 		{
 			return 1.0 / std::sqrt(lineCount);
 		}
@@ -477,7 +477,7 @@ namespace CloudSeed
 				lines[i]->SetDiffuserSeed(((long long)postDiffusionSeed) * (i + 1), crossSeed);
 		}
 
-		double Ms2Samples(double value)
+		float Ms2Samples(float value)
 		{
 			return value / 1000.0 * samplerate;
 		}

@@ -5,25 +5,25 @@
 
 namespace AudioLib
 {
-	double DSY_SDRAM_BSS ValueTables::Sqrt[TableSize];
-	double DSY_SDRAM_BSS ValueTables::Sqrt3[TableSize];
-	double DSY_SDRAM_BSS ValueTables::Pow1_5[TableSize];
-	double DSY_SDRAM_BSS ValueTables::Pow2[TableSize];
-	double DSY_SDRAM_BSS ValueTables::Pow3[TableSize];
-	double DSY_SDRAM_BSS ValueTables::Pow4[TableSize];
-	double DSY_SDRAM_BSS ValueTables::x2Pow3[TableSize];
+	float DSY_SDRAM_BSS ValueTables::Sqrt[TableSize];
+	float DSY_SDRAM_BSS ValueTables::Sqrt3[TableSize];
+	float DSY_SDRAM_BSS ValueTables::Pow1_5[TableSize];
+	float DSY_SDRAM_BSS ValueTables::Pow2[TableSize];
+	float DSY_SDRAM_BSS ValueTables::Pow3[TableSize];
+	float DSY_SDRAM_BSS ValueTables::Pow4[TableSize];
+	float DSY_SDRAM_BSS ValueTables::x2Pow3[TableSize];
 
-	// octave response. value double every step (2,3,4,5 or 6 steps)
-	double DSY_SDRAM_BSS ValueTables::Response2Oct[TableSize];
-	double DSY_SDRAM_BSS ValueTables::Response3Oct[TableSize];
-	double DSY_SDRAM_BSS ValueTables::Response4Oct[TableSize];
-	double DSY_SDRAM_BSS ValueTables::Response5Oct[TableSize];
-	double DSY_SDRAM_BSS ValueTables::Response6Oct[TableSize];
+	// octave response. value float every step (2,3,4,5 or 6 steps)
+	float DSY_SDRAM_BSS ValueTables::Response2Oct[TableSize];
+	float DSY_SDRAM_BSS ValueTables::Response3Oct[TableSize];
+	float DSY_SDRAM_BSS ValueTables::Response4Oct[TableSize];
+	float DSY_SDRAM_BSS ValueTables::Response5Oct[TableSize];
+	float DSY_SDRAM_BSS ValueTables::Response6Oct[TableSize];
 
 	// decade response, value multiplies by 10 every step
-	double DSY_SDRAM_BSS ValueTables::Response2Dec[TableSize];
-	double DSY_SDRAM_BSS ValueTables::Response3Dec[TableSize];
-	double DSY_SDRAM_BSS ValueTables::Response4Dec[TableSize];
+	float DSY_SDRAM_BSS ValueTables::Response2Dec[TableSize];
+	float DSY_SDRAM_BSS ValueTables::Response3Dec[TableSize];
+	float DSY_SDRAM_BSS ValueTables::Response4Dec[TableSize];
 
 	void ValueTables::Init()
 	{
@@ -31,7 +31,7 @@ namespace AudioLib
 
 		for (int i = 0; i <= 4000; i++)
 		{
-			double x = i / 4000.0;
+			float x = i / 4000.0;
 
 			Sqrt[i] = std::sqrt(x);
 			Sqrt3[i] = std::pow(x, 1.0 / 3.0);
@@ -74,7 +74,7 @@ namespace AudioLib
 		Response4Dec[0] = 0;
 	}
 
-	double ValueTables::Get(double index, double* table)
+	float ValueTables::Get(float index, float* table)
 	{
 		if (table == nullptr)
 			return index;
