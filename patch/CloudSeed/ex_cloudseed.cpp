@@ -46,9 +46,13 @@ void* custom_pool_allocate(size_t size)
 }
 
 
+float prevDecay = -1;
+float prevMainOut = -1;
+float prevDiffusion = -1;
+
 static void VerbCallback(float **in, float **out, size_t size)
 {
-
+    send = 1.0;
     float dryL, dryR, wetL, wetR, sendL, sendR;
     patch.UpdateAnalogControls();
     for (int i = 0; i < 4; i++)
@@ -65,12 +69,31 @@ static void VerbCallback(float **in, float **out, size_t size)
     for (size_t i = 0; i < size; i++)
     {
         // read some controls
-        drylevel = patch.GetCtrlValue(patch.CTRL_1);
-        send     = patch.GetCtrlValue(patch.CTRL_2);
-        //reverb->SetParameter(::Parameter::LineDelay, drylevel);
+        drylevel = ctrlVal[0];
+        if ((prevMainOut < (ctrlVal[1]-0.1)) || (prevMainOut > (ctrlVal[1]+0.1)))
+        {
+          reverb->SetParameter(::Parameter::MainOut, ctrlVal[1]);
+          prevMainOut = ctrlVal[1];
+        }
+
+        if ((prevDecay < (ctrlVal[2]-0.1)) || (prevDecay > (ctrlVal[2]+0.1)))
+        {
+          reverb->SetParameter(::Parameter::LineDecay, ctrlVal[2]);
+          prevDecay = ctrlVal[2];
+        }
+        if ((prevDiffusion < (ctrlVal[3]-0.1)) || (prevDiffusion > (ctrlVal[3]+0.1)))
+        {
+          reverb->SetParameter(::Parameter::LateDiffusionFeedback, ctrlVal[3]);
+          prevDiffusion = ctrlVal[3];
+        }
+
+        
+
+
+
         // Read Inputs (only stereo in are used)
-        dryL = in[0][i];
-        dryR = in[1][i];
+        dryL = in[0][i]*drylevel;
+        dryR = in[1][i]*drylevel;
 
         // Send Signal to Reverb
         sendL = dryL * send;
@@ -83,15 +106,16 @@ static void VerbCallback(float **in, float **out, size_t size)
         wetR=outs[1];	
 
 
-        // Out 1 and 2 are Mixed 
-        out[0][i] = outs[0];//(dryL * drylevel) + wetL;
-        out[1][i] = outs[1];//(dryR * drylevel) + wetR;
+        out[0][i] = outs[0];
+        out[1][i] = outs[1];
 
         // Out 3 and 4 are just wet
-        out[2][i] = outs[0];//wetL;
-        out[3][i] = outs[1];//wetR;
+        out[2][i] = outs[0];
+        out[3][i] = outs[1];
     }
 }
+
+char* param_names[4] = {"dry:","wet:", "decay:", "diffusion:"};
 
 void UpdateOled()
 {
@@ -99,15 +123,16 @@ void UpdateOled()
 #if 1
     patch.display.Fill(false);
 
-    test::sprintf(buf,"%s", "CloudSeed");
+    test::sprintf(buf,"%s", "CloudSeed Reverb");
     patch.display.SetCursor(0,0);
     patch.display.WriteString(buf, Font_6x8, true);
+    
 
     for (int i=0;i<4;i++)
     {
       //two circuits
       patch.display.SetCursor(0, 10+i*10);
-      test::sprintf(buf, "ctrl%d:%1.5f", i, ctrlVal[i]);
+      test::sprintf(buf, "%s:%1.5f", param_names[i], ctrlVal[i]);
       patch.display.WriteString(buf, Font_7x10, true);
     }
 
