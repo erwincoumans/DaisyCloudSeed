@@ -1,6 +1,16 @@
 #include "daisysp.h"
 #include "daisy_patch.h"
 #include <string>
+
+
+namespace test {
+#include "printf.h"
+#include "printf.c"
+};
+//64 bytes should be enough
+char buf[64];
+float ctrlVal[4];
+
 #include "../../CloudSeed/Default.h"
 #include "../../CloudSeed/ReverbController.h"
 #include "../../CloudSeed/FastSin.h"
@@ -17,7 +27,7 @@ CloudSeed::ReverbController* reverb = 0;
 
 
 
-#define CUSTOM_POOL_SIZE (52*1024*1024)
+#define CUSTOM_POOL_SIZE (48*1024*1024)
 
 DSY_SDRAM_BSS char custom_pool[CUSTOM_POOL_SIZE];
 
@@ -38,8 +48,20 @@ void* custom_pool_allocate(size_t size)
 
 static void VerbCallback(float **in, float **out, size_t size)
 {
+
     float dryL, dryR, wetL, wetR, sendL, sendR;
     patch.UpdateAnalogControls();
+    for (int i = 0; i < 4; i++)
+    {
+        //Get the four control values
+        ctrlVal[i] = patch.controls[i].Process();
+        if (ctrlVal[i]<0.003)
+           ctrlVal[i] = 0;
+        if (ctrlVal[i]>0.97)
+           ctrlVal[i]=1;
+    }
+
+
     for (size_t i = 0; i < size; i++)
     {
         // read some controls
@@ -71,7 +93,29 @@ static void VerbCallback(float **in, float **out, size_t size)
     }
 }
 
-void UpdateOled();
+void UpdateOled()
+{
+    //patch.DisplayControls(false);
+#if 1
+    patch.display.Fill(false);
+
+    test::sprintf(buf,"%s", "CloudSeed");
+    patch.display.SetCursor(0,0);
+    patch.display.WriteString(buf, Font_6x8, true);
+
+    for (int i=0;i<4;i++)
+    {
+      //two circuits
+      patch.display.SetCursor(0, 10+i*10);
+      test::sprintf(buf, "ctrl%d:%1.5f", i, ctrlVal[i]);
+      patch.display.WriteString(buf, Font_7x10, true);
+    }
+
+    patch.display.Update();
+#endif
+}
+
+
 
 int main(void)
 {
@@ -103,7 +147,3 @@ int main(void)
 
 }
 
-void UpdateOled()
-{
-    patch.DisplayControls(false);
-}

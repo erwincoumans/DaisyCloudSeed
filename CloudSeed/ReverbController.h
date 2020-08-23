@@ -37,7 +37,7 @@ namespace CloudSeed
 			, channelR(bufferSize, samplerate, ChannelLR::Right)
 		{
 			this->samplerate = samplerate;
-			//initFactoryChorus();
+			initFactoryChorus();
 			//initFactoryDullEchos();
 			//initFactoryHyperplane();
 			//initFactoryMediumSpace();
@@ -45,7 +45,7 @@ namespace CloudSeed
 			//initFactoryRubiKaFields();
 			//initFactorySmallRoom();
 			//initFactory90sAreBack();
-			initFactoryThroughTheLookingGlass();
+			//initFactoryThroughTheLookingGlass();
 			
 		}
 
@@ -66,7 +66,7 @@ namespace CloudSeed
 			parameters[(int)Parameter::DiffusionDelay] = 0.43500006198883057;
 			parameters[(int)Parameter::DiffusionFeedback] = 0.725000262260437;
 			parameters[(int)Parameter::LineCount] = 1.0;
-			parameters[(int)Parameter::LineDelay] = 10.68499988317489624;
+			parameters[(int)Parameter::LineDelay] = 0.68499988317489624;
 			parameters[(int)Parameter::LineDecay] = 0.68000012636184692;
 			parameters[(int)Parameter::LateDiffusionEnabled] = 1.0;
 			parameters[(int)Parameter::LateDiffusionStages] = 0.28571429848670959;
