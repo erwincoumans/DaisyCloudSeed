@@ -10,16 +10,30 @@
 using namespace daisy;
 using namespace daisysp;
 static DaisyPatch patch;
-static ReverbSc verb;
-static DcBlock blk[2];
 ::daisy::Parameter lpParam;
 static float drylevel, send;
 
 CloudSeed::ReverbController* reverb = 0;
 
 
-DSY_SDRAM_BSS double delayBuffer[44100];
-DSY_SDRAM_BSS double outputBuffer[44100];
+
+#define CUSTOM_POOL_SIZE (52*1024*1024)
+
+DSY_SDRAM_BSS char custom_pool[CUSTOM_POOL_SIZE];
+
+size_t pool_index = 0;
+int allocation_count = 0;
+
+void* custom_pool_allocate(size_t size)
+{
+        if (pool_index + size >= CUSTOM_POOL_SIZE)
+        {
+                return 0;
+        }
+        void* ptr = &custom_pool[pool_index];
+        pool_index += size;
+        return ptr;
+}
 
 
 static void VerbCallback(float **in, float **out, size_t size)
@@ -31,8 +45,6 @@ static void VerbCallback(float **in, float **out, size_t size)
         // read some controls
         drylevel = patch.GetCtrlValue(patch.CTRL_1);
         send     = patch.GetCtrlValue(patch.CTRL_2);
-        verb.SetFeedback(patch.GetCtrlValue(patch.CTRL_3) * .94f);
-        verb.SetLpFreq(lpParam.Process());
 
         // Read Inputs (only stereo in are used)
         dryL = in[0][i];
@@ -41,19 +53,21 @@ static void VerbCallback(float **in, float **out, size_t size)
         // Send Signal to Reverb
         sendL = dryL * send;
         sendR = dryR * send;
-        verb.Process(sendL, sendR, &wetL, &wetR);
+        //verb.Process(sendL, sendR, &wetL, &wetR);
+        float ins[2]={sendL,sendR};
+	float outs[2]={sendL,sendR};
+        reverb->Process( ins, outs, 1);
+        wetL=outs[0];
+        wetR=outs[1];	
 
-        // Dc Block
-        wetL = blk[0].Process(wetL);
-        wetR = blk[1].Process(wetR);
 
         // Out 1 and 2 are Mixed 
-        out[0][i] = (dryL * drylevel) + wetL;
-        out[1][i] = (dryR * drylevel) + wetR;
+        out[0][i] = outs[0];//(dryL * drylevel) + wetL;
+        out[1][i] = outs[1];//(dryR * drylevel) + wetR;
 
         // Out 3 and 4 are just wet
-        out[2][i] = wetL;
-        out[3][i] = wetR;
+        out[2][i] = outs[0];//wetL;
+        out[3][i] = outs[1];//wetR;
     }
 }
 
@@ -67,15 +81,8 @@ int main(void)
 
     AudioLib::ValueTables::Init();
     CloudSeed::FastSin::Init();
-    //reverb = new CloudSeed::ReverbController(samplerate);
-    CloudSeed::ReverbChannel*  channelL = new CloudSeed::ReverbChannel(256, samplerate, CloudSeed::ChannelLR::Left, delayBuffer, outputBuffer);
-
-    verb.Init(samplerate);
-    verb.SetFeedback(0.85f);
-    verb.SetLpFreq(18000.0f);
-
-    blk[0].Init(samplerate);
-    blk[1].Init(samplerate);
+    reverb = new CloudSeed::ReverbController(samplerate);
+    reverb->ClearBuffers();
 
     lpParam.Init(patch.controls[3], 20, 20000, ::daisy::Parameter::LOGARITHMIC);
 

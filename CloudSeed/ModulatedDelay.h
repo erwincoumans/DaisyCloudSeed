@@ -5,6 +5,8 @@
 #include "Utils.h"
 #include "FastSin.h"
 
+extern void* custom_pool_allocate(size_t size);
+
 namespace CloudSeed
 {
 	class ModulatedDelay
@@ -36,8 +38,8 @@ namespace CloudSeed
 		{
 			this->delayBufferSizeSamples = delayBufferSizeSamples;
 			this->bufferSize = bufferSize;
-			this->delayBuffer = new double[delayBufferSizeSamples];
-			this->output = new double[bufferSize];
+			this->delayBuffer = new (custom_pool_allocate(sizeof(double) * delayBufferSizeSamples)) double[delayBufferSizeSamples];
+			this->output = new (custom_pool_allocate(sizeof(double) * bufferSize)) double[bufferSize];
 			this->SampleDelay = sampleDelay;
 			writeIndex = 0;
 			modPhase = 0.01 + 0.98 * (std::rand() / (double)RAND_MAX);

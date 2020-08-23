@@ -18,6 +18,8 @@
 #include "AudioLib/ShaRandom.h"
 #include "Utils.h"
 
+extern void* custom_pool_allocate(size_t size);
+
 using namespace std;
 
 namespace CloudSeed
@@ -31,7 +33,7 @@ namespace CloudSeed
 	class ReverbChannel
 	{
 	private:
-		static const int TotalLineCount = 12;
+		static const int TotalLineCount = 2;
 
 		map<Parameter, double> parameters;
 		int samplerate;
@@ -75,7 +77,7 @@ namespace CloudSeed
 			this->channelLr = leftOrRight;
 
 			for (int i = 0; i < TotalLineCount; i++)
-				lines.push_back(new DelayLine(bufferSize, samplerate));
+				lines.push_back(new (custom_pool_allocate(sizeof(DelayLine)))DelayLine(bufferSize, samplerate));
 
 			this->bufferSize = bufferSize;
 
@@ -83,14 +85,14 @@ namespace CloudSeed
 				this->parameters[static_cast<Parameter>(value)] = 0.0;
 
 			crossSeed = 0.0;
-			lineCount = 8;
+			lineCount = 2;
 			diffuser.SetInterpolationEnabled(true);
 			highPass.SetCutoffHz(20);
 			lowPass.SetCutoffHz(20000);
 
-			tempBuffer = new double[bufferSize];
-			lineOutBuffer = new double[bufferSize];
-			outBuffer = new double[bufferSize];
+			tempBuffer = new  (custom_pool_allocate(sizeof(double)*bufferSize))double[bufferSize];
+			lineOutBuffer = new (custom_pool_allocate(sizeof(double) * bufferSize))double[bufferSize];
+			outBuffer = new (custom_pool_allocate(sizeof(double) * bufferSize))double[bufferSize];
 
 			this->samplerate = samplerate;
 		}
@@ -192,7 +194,7 @@ namespace CloudSeed
 				break;
 
 			case Parameter::LineCount:
-				lineCount = (int)value;
+				//lineCount = (int)value;
 				break;
 			case Parameter::LineDelay:
 				UpdateLines();
