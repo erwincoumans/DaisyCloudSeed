@@ -9,7 +9,7 @@ namespace test {
 };
 //64 bytes should be enough
 char buf[64];
-float ctrlVal[4];
+
 
 #include "../../CloudSeed/Default.h"
 #include "../../CloudSeed/ReverbController.h"
@@ -25,7 +25,7 @@ static float drylevel, send;
 
 CloudSeed::ReverbController* reverb = 0;
 bool gUpdateOled = true;
-
+bool gRisingEdge = false;
 
 #define CUSTOM_POOL_SIZE (48*1024*1024)
 
@@ -46,46 +46,59 @@ void* custom_pool_allocate(size_t size)
 }
 
 
-float prevDecay = -1;
-float prevMainOut = -1;
-float prevDiffusion = -1;
+float ctrlVal[4];
+float prevCtrlVal[4];
+
+
 
 static void VerbCallback(float **in, float **out, size_t size)
 {
     send = 1.0;
     float dryL, dryR, wetL, wetR, sendL, sendR;
      // read some controls
-    drylevel = ctrlVal[0];
     
     patch.UpdateAnalogControls();
     patch.DebounceControls();
-    
+
+    if (patch.encoder.RisingEdge())
+    {
+      gRisingEdge = true;
+    }
+        
     for (int i = 0; i < 4; i++)
     {
         //Get the four control values
         ctrlVal[i] = patch.controls[i].Process();
-        if (ctrlVal[i]<0.003)
+        if (ctrlVal[i]<0.01)
            ctrlVal[i] = 0;
         if (ctrlVal[i]>0.97)
            ctrlVal[i]=1;
     }
 
+    drylevel = ctrlVal[0];
+    
+    
+    
+    
+    float delta = 0.01;
    
-    if ((prevMainOut < (ctrlVal[1]-0.1)) || (prevMainOut > (ctrlVal[1]+0.1)))
+    prevCtrlVal[0] = ctrlVal[0];
+    
+    if ((prevCtrlVal[1] < (ctrlVal[1]-delta)) || (prevCtrlVal[1] > (ctrlVal[1]+delta)))
     {
       reverb->SetParameter(::Parameter::MainOut, ctrlVal[1]);
-      prevMainOut = ctrlVal[1];
+      prevCtrlVal[1] = ctrlVal[1];
     }
 
-    if ((prevDecay < (ctrlVal[2]-0.1)) || (prevDecay > (ctrlVal[2]+0.1)))
+    if ((prevCtrlVal[2] < (ctrlVal[2]-delta)) || (prevCtrlVal[2] > (ctrlVal[2]+delta)))
     {
       reverb->SetParameter(::Parameter::LineDecay, ctrlVal[2]);
-      prevDecay = ctrlVal[2];
+      prevCtrlVal[2] = ctrlVal[2];
     }
-    if ((prevDiffusion < (ctrlVal[3]-0.1)) || (prevDiffusion > (ctrlVal[3]+0.1)))
+    if ((prevCtrlVal[3] < (ctrlVal[3]-delta)) || (prevCtrlVal[3] > (ctrlVal[3]+delta)))
     {
       reverb->SetParameter(::Parameter::LateDiffusionFeedback, ctrlVal[3]);
-      prevDiffusion = ctrlVal[3];
+      prevCtrlVal[3] = ctrlVal[3];
     }
 
 
@@ -133,7 +146,7 @@ void UpdateOled()
     {
       //two circuits
       patch.display.SetCursor(0, 10+i*10);
-      test::sprintf(buf, "%s:%1.5f", param_names[i], ctrlVal[i]);
+      test::sprintf(buf, "%s:%1.5f", param_names[i], prevCtrlVal[i]);
       patch.display.WriteString(buf, Font_7x10, true);
     }
 
@@ -175,13 +188,14 @@ int main(void)
       
       patch.DelayMs(100);
 
-      if (patch.encoder.RisingEdge())
+      if (gRisingEdge)
       {
         patch.display.Fill(false);
         gUpdateOled = !gUpdateOled;
         patch.display.Update();
+        gRisingEdge = false;
       }
-  
+
       if (gUpdateOled)
       {
         UpdateOled();
