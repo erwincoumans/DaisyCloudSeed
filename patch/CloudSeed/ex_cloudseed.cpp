@@ -24,7 +24,7 @@ static DaisyPatch patch;
 static float drylevel, send;
 
 CloudSeed::ReverbController* reverb = 0;
-
+bool gUpdateOled = true;
 
 
 #define CUSTOM_POOL_SIZE (48*1024*1024)
@@ -54,7 +54,12 @@ static void VerbCallback(float **in, float **out, size_t size)
 {
     send = 1.0;
     float dryL, dryR, wetL, wetR, sendL, sendR;
+     // read some controls
+    drylevel = ctrlVal[0];
+    
     patch.UpdateAnalogControls();
+    patch.DebounceControls();
+    
     for (int i = 0; i < 4; i++)
     {
         //Get the four control values
@@ -65,32 +70,28 @@ static void VerbCallback(float **in, float **out, size_t size)
            ctrlVal[i]=1;
     }
 
+   
+    if ((prevMainOut < (ctrlVal[1]-0.1)) || (prevMainOut > (ctrlVal[1]+0.1)))
+    {
+      reverb->SetParameter(::Parameter::MainOut, ctrlVal[1]);
+      prevMainOut = ctrlVal[1];
+    }
+
+    if ((prevDecay < (ctrlVal[2]-0.1)) || (prevDecay > (ctrlVal[2]+0.1)))
+    {
+      reverb->SetParameter(::Parameter::LineDecay, ctrlVal[2]);
+      prevDecay = ctrlVal[2];
+    }
+    if ((prevDiffusion < (ctrlVal[3]-0.1)) || (prevDiffusion > (ctrlVal[3]+0.1)))
+    {
+      reverb->SetParameter(::Parameter::LateDiffusionFeedback, ctrlVal[3]);
+      prevDiffusion = ctrlVal[3];
+    }
+
 
     for (size_t i = 0; i < size; i++)
     {
-        // read some controls
-        drylevel = ctrlVal[0];
-        if ((prevMainOut < (ctrlVal[1]-0.1)) || (prevMainOut > (ctrlVal[1]+0.1)))
-        {
-          reverb->SetParameter(::Parameter::MainOut, ctrlVal[1]);
-          prevMainOut = ctrlVal[1];
-        }
-
-        if ((prevDecay < (ctrlVal[2]-0.1)) || (prevDecay > (ctrlVal[2]+0.1)))
-        {
-          reverb->SetParameter(::Parameter::LineDecay, ctrlVal[2]);
-          prevDecay = ctrlVal[2];
-        }
-        if ((prevDiffusion < (ctrlVal[3]-0.1)) || (prevDiffusion > (ctrlVal[3]+0.1)))
-        {
-          reverb->SetParameter(::Parameter::LateDiffusionFeedback, ctrlVal[3]);
-          prevDiffusion = ctrlVal[3];
-        }
-
-        
-
-
-
+       
         // Read Inputs (only stereo in are used)
         dryL = in[0][i]*drylevel;
         dryR = in[1][i]*drylevel;
@@ -100,7 +101,7 @@ static void VerbCallback(float **in, float **out, size_t size)
         sendR = dryR * send;
         //verb.Process(sendL, sendR, &wetL, &wetR);
         float ins[2]={sendL,sendR};
-	float outs[2]={sendL,sendR};
+	      float outs[2]={sendL,sendR};
         reverb->Process( ins, outs, 1);
         wetL=outs[0];
         wetR=outs[1];	
@@ -171,7 +172,20 @@ int main(void)
 
     while(1) 
     {
+      
+      patch.DelayMs(100);
+
+      if (patch.encoder.RisingEdge())
+      {
+        patch.display.Fill(false);
+        gUpdateOled = !gUpdateOled;
+        patch.display.Update();
+      }
+  
+      if (gUpdateOled)
+      {
         UpdateOled();
+      }
     }
 
 }
