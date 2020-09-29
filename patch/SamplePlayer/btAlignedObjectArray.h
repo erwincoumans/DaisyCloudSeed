@@ -104,7 +104,9 @@ protected:
 	SIMD_FORCE_INLINE void* allocate(int size)
 	{
 		if (size)
-			return custom_pool_allocate(size);
+		{
+			return custom_pool_allocate(size* sizeof(T));
+		}
 		return 0;
 	}
 
