@@ -10,11 +10,14 @@
 #include "btAlignedObjectArray.h"
 #include "b3ReadWavFile.h"
 
+int samplerate;
 btAlignedObjectArray<int> bla;
 #include <string>
 
-b3ReadWavFile wavFileReader;
+#define kMaxFiles 8
 
+b3ReadWavFile wavFileReaders[kMaxFiles];
+b3WavTicker wavTickers[kMaxFiles];
 namespace test {
 
 #include "printf.h"
@@ -31,11 +34,13 @@ static SdmmcHandler sd;
 char buf[64];
 
 size_t file_cnt_=0, file_sel_=0;
-#define kMaxFiles 8
+
 WavFileInfo             file_info_[kMaxFiles];
+int file_sizes[kMaxFiles];
 #define WAV_FILENAME_MAX  256 /**< Maximum LFN (set to same in FatFs (ffconf.h) */
 int selected_file_index=0;
-
+int num_frames = -1;
+int num_channels = -2;
 std::string sd_debug_msg="no sdcard";
 
 
@@ -44,7 +49,7 @@ static DaisyPatch patch;
 static float drylevel, send;
 
 bool gUpdateOled = true;
-bool gRisingEdge = false;
+bool gRisingEdge = true;
 
 #define CUSTOM_POOL_SIZE (48*1024*1024)
 
@@ -73,6 +78,7 @@ float prevCtrlVal[4];
 
 static void VerbCallback(float **in, float **out, size_t size)
 {
+    
     send = 1.0;
     float dryL, dryR, wetL, wetR, sendL, sendR;
      // read some controls
@@ -85,83 +91,92 @@ static void VerbCallback(float **in, float **out, size_t size)
       gRisingEdge = true;
     }
     
-    int inc = 0;
-     // Change selected file with encoder.
-    inc = patch.encoder.Increment();
-    if(inc > 0)
+    if (!gRisingEdge)
     {
-        if ((selected_file_index+1) < file_cnt_)
-        {
-          selected_file_index++;
-        }
-    }
-    else if(inc < 0)
-    {
-      if (selected_file_index > 0)
+      
+      int inc = 0;
+       // Change selected file with encoder.
+      inc = patch.encoder.Increment();
+      if(inc > 0)
       {
-        selected_file_index--;
+          if ((selected_file_index+1) < file_cnt_)
+          {
+            selected_file_index++;
+          }
+      }
+      else if(inc < 0)
+      {
+        if (selected_file_index > 0)
+        {
+          selected_file_index--;
+        }
+      }
+      
+          
+      for (int i = 0; i < 4; i++)
+      {
+          //Get the four control values
+          ctrlVal[i] = patch.controls[i].Process();
+          if (ctrlVal[i]<0.01)
+             ctrlVal[i] = 0;
+          if (ctrlVal[i]>0.97)
+             ctrlVal[i]=1;
+      }
+      drylevel = ctrlVal[0];
+      float delta = 0.01;
+      prevCtrlVal[0] = ctrlVal[0];
+      
+      if ((prevCtrlVal[1] < (ctrlVal[1]-delta)) || (prevCtrlVal[1] > (ctrlVal[1]+delta)))
+      {
+        
+        prevCtrlVal[1] = ctrlVal[1];
+      }
+
+      if ((prevCtrlVal[2] < (ctrlVal[2]-delta)) || (prevCtrlVal[2] > (ctrlVal[2]+delta)))
+      {
+        
+        prevCtrlVal[2] = ctrlVal[2];
+      }
+      if ((prevCtrlVal[3] < (ctrlVal[3]-delta)) || (prevCtrlVal[3] > (ctrlVal[3]+delta)))
+      {
+        
+        prevCtrlVal[3] = ctrlVal[3];
+      }
+      
+      for (size_t i = 0; i < size; i++)
+      {
+         
+          // Read Inputs (only stereo in are used)
+          dryL = in[0][i]*drylevel;
+          dryR = in[1][i]*drylevel;
+
+          // Send Signal to Reverb
+          sendL = dryL * send;
+          sendR = dryR * send;
+          //verb.Process(sendL, sendR, &wetL, &wetR);
+          float ins[2]={sendL,sendR};
+  	      float outs[2]={sendL,sendR};
+         
+          wavFileReaders[selected_file_index].tick(0, &wavTickers[selected_file_index], (ctrlVal[0]-0.5)*4.0);
+          out[0][i] = wavTickers[selected_file_index].lastFrame_[0];
+          out[1][i] = wavTickers[selected_file_index].lastFrame_[1];
+          //out[0][i] = 0;
+          //out[1][i] = 0;
+          
+          // Out 3 and 4 are silent
+          out[2][i] = 0;
+          out[3][i] = 0;
       }
     }
-    
-        
-    for (int i = 0; i < 4; i++)
+    else
     {
-        //Get the four control values
-        ctrlVal[i] = patch.controls[i].Process();
-        if (ctrlVal[i]<0.01)
-           ctrlVal[i] = 0;
-        if (ctrlVal[i]>0.97)
-           ctrlVal[i]=1;
-    }
-
-    drylevel = ctrlVal[0];
-    
-    
-    
-    
-    float delta = 0.01;
-   
-    prevCtrlVal[0] = ctrlVal[0];
-    
-    if ((prevCtrlVal[1] < (ctrlVal[1]-delta)) || (prevCtrlVal[1] > (ctrlVal[1]+delta)))
-    {
-      
-      prevCtrlVal[1] = ctrlVal[1];
-    }
-
-    if ((prevCtrlVal[2] < (ctrlVal[2]-delta)) || (prevCtrlVal[2] > (ctrlVal[2]+delta)))
-    {
-      
-      prevCtrlVal[2] = ctrlVal[2];
-    }
-    if ((prevCtrlVal[3] < (ctrlVal[3]-delta)) || (prevCtrlVal[3] > (ctrlVal[3]+delta)))
-    {
-      
-      prevCtrlVal[3] = ctrlVal[3];
-    }
-
-
-    for (size_t i = 0; i < size; i++)
-    {
-       
-        // Read Inputs (only stereo in are used)
-        dryL = in[0][i]*drylevel;
-        dryR = in[1][i]*drylevel;
-
-        // Send Signal to Reverb
-        sendL = dryL * send;
-        sendR = dryR * send;
-        //verb.Process(sendL, sendR, &wetL, &wetR);
-        float ins[2]={sendL,sendR};
-	      float outs[2]={sendL,sendR};
-        
-
-        out[0][i] = 0;
-        out[1][i] = 0;
-
-        // Out 3 and 4 are just wet
-        out[2][i] = 0;
-        out[3][i] = 0;
+      for (size_t i = 0; i < size; i++)
+      {
+          out[0][i] = 0;
+          out[1][i] = 0;
+          out[2][i] = 0;
+          out[3][i] = 0;
+      }
     }
 }
 
@@ -197,6 +212,15 @@ void UpdateOled()
         }
         patch.display.WriteString(buf, Font_7x10, true);
       }
+      patch.display.SetCursor(0, 10+4*10);
+      int nf = wavFileReaders[selected_file_index].getNumFrames();
+      int sz = sizeof(signed short int);
+      //test::sprintf(buf, "mem:%d", pool_index);//wavTickers[selected_file_index].time_);
+      test::sprintf(buf, "sr:%d", samplerate);//wavTickers[selected_file_index].time_);
+      
+      patch.display.WriteString(buf, Font_7x10, true);
+      
+      
     }
 
     patch.display.Update();
@@ -208,7 +232,7 @@ void UpdateOled()
 
 int main(void)
 {
-    float samplerate;
+    
     patch.Init();
     samplerate = patch.AudioSampleRate();
 
@@ -258,9 +282,39 @@ int main(void)
               if(strstr(fn, ".wav") || strstr(fn, ".WAV"))
               {
                   strcpy(file_info_[file_cnt_].name, fn);
-                  file_cnt_++;
                   // For now lets break anyway to test.
                   //                break;
+                  size_t bytesread;
+                  if(f_open(&SDFile, file_info_[file_cnt_].name, (FA_OPEN_EXISTING | FA_READ))
+                     == FR_OK)
+                  {
+                    file_sizes[file_cnt_] = f_size(&SDFile);
+                    char* memoryBuffer = 0;
+                    int memorySize= 0;
+                    UINT size = file_sizes[file_cnt_];
+                    size_t bytesread;
+                    memoryBuffer = (char*) custom_pool_allocate(size);
+                    UINT bytesRead;
+                    // Read the whole WAV file
+                    if(f_read(&SDFile,(void *)memoryBuffer,size,&bytesread) == FR_OK)
+                    {
+                      memorySize = size;
+                      MemoryDataSource dataSource(memoryBuffer, memorySize);
+                      wavFileReaders[file_cnt_].getWavInfo(dataSource);
+                      num_frames = wavFileReaders[file_cnt_].getNumFrames();
+                      num_channels = wavFileReaders[file_cnt_].getNumChannels();
+
+                      wavFileReaders[file_cnt_].resize();
+                      if (wavFileReaders[file_cnt_].read(dataSource,0, true))
+                      {
+                        wavTickers[file_cnt_] = wavFileReaders[file_cnt_].createWavTicker(samplerate);
+                        file_cnt_++;
+                      }
+
+                    }
+                    f_close(&SDFile);
+                  }
+                  
               }
           }
           else
@@ -269,15 +323,12 @@ int main(void)
           }
       } while(result == FR_OK);
     }
+    f_closedir(&dir);
+    
+    gRisingEdge = false;
 /////////////////
-
-
-
     patch.StartAdc();
     patch.StartAudio(VerbCallback);
-
-
-
 
 
 
@@ -288,9 +339,8 @@ int main(void)
 
       if (gRisingEdge)
       {
-        patch.display.Fill(false);
-        gUpdateOled = !gUpdateOled;
-        patch.display.Update();
+        wavTickers[selected_file_index].finished_ = false;
+        wavTickers[selected_file_index].time_ = 0;
         gRisingEdge = false;
       }
 
