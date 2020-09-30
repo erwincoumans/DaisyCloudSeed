@@ -180,8 +180,6 @@ public:
 
 	b3WavTicker createWavTicker(double sampleRate);
 
-	bool read(b3DataSource& dataSource, unsigned long startFrame, bool doNormalize);
-
 	int getNumFrames() const
 	{
 		return m_numFrames;
