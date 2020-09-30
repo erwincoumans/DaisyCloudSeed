@@ -25,6 +25,7 @@ b3ReadWavFile::~b3ReadWavFile()
 
 void b3ReadWavFile::normalize(double peak)
 {
+#if 0
 	int i;
 	double max = 0.0;
 
@@ -41,28 +42,132 @@ void b3ReadWavFile::normalize(double peak)
 		for (i = 0; i < m_frames.size(); i++)
 			m_frames[i] *= max;
 	}
+#endif
 }
 
-double b3ReadWavFile::interpolate(double frame, unsigned int channel) const
+double b3ReadWavFile::interpolate(double frame, unsigned int channel, b3DataSource& dataSource) const
 {
 	int iIndex = (int)frame;                        // integer part of index
 	double output, alpha = frame - (double)iIndex;  // fractional part of index
 
 	iIndex = iIndex * channels_ + channel;
-	output = m_frames[iIndex];
-	if (alpha > 0.0)
-		output += (alpha * (m_frames[iIndex + channels_] - output));
-
+	
+	
+	if (dataType_ == B3_SINT8)
+	{  // signed 8-bit data
+		unsigned char buf[4];
+		if (dataSource.fseek( dataOffset_ + iIndex, B3_SEEK_SET) == -1)
+			return false;
+		if (dataSource.fread(buf, 2*channels_, 1) != 1)
+			return false;
+		double gain = 1.0 / 128.0;
+		
+		output = (buf[0] - 128)*gain;
+		if (alpha > 0.0)
+	  	output += (alpha * ((buf[channels_]-128)*gain - output));
+	}
+	
+	
+	
+  if (dataType_ == B3_SINT24)
+	{
+		// 24-bit values are harder to import efficiently since there is
+		// no native 24-bit type.  The following routine works but is much
+		// less efficient than that used for the other data types.
+		double buf[4];
+		int temp;
+		unsigned char *ptr = (unsigned char *)&temp;
+		double gain = 1.0 / 2147483648.0;
+		if (dataSource.fseek( dataOffset_ + (iIndex * 3), B3_SEEK_SET) == -1)
+			return false;
+		for (int i = 0; i < 2*channels_; i++)
+		{
+			if (m_machineIsLittleEndian)
+			{
+				if (byteswap_)
+				{
+					if (dataSource.fread(ptr, 3, 1) != 1)
+						return false;
+					temp &= 0x00ffffff;
+					b3Swap32((unsigned char *)ptr);
+				}
+				else
+				{
+					if (dataSource.fread(ptr + 1, 3, 1) != 1)
+						return false;
+					temp &= 0xffffff00;
+				}
+			}
+			buf[i] = (double)temp * gain;  // "gain" also  includes 1 / 256 factor.
+		}
+		output = buf[0];
+		if (alpha > 0.0)
+	  	output += (alpha * (buf[channels_] - output));
+		
+	}
+	if (dataType_ == B3_SINT32)
+	{
+		int buf[4];
+		if (dataSource.fseek( dataOffset_ + (iIndex * 4), B3_SEEK_SET) == -1)
+			return false;
+		if (dataSource.fread(buf, 2*channels_ * 4, 1) != 1)
+			return false;
+		double gain = 1.0 / 2147483648.0;
+		output = buf[0]*gain;
+		if (alpha > 0.0)
+	  	output += (alpha * (buf[channels_]*gain - output));
+	}
+	
+	if (dataType_ == B3_SINT16)
+	{
+		signed short int buf[4];
+		if (dataSource.fseek( dataOffset_ + (iIndex * 2), B3_SEEK_SET) == -1)
+			return false;
+		if (dataSource.fread(buf, 2*channels_ * 2, 1) != 1)
+			return false;
+		double gain = 1.0 / 32768.0;
+		output = buf[0]*gain;
+		if (alpha > 0.0)
+	  	output += (alpha * (buf[channels_]*gain - output));
+	}
+	
+	if (dataType_ == B3_FLOAT32)
+	{
+	  float buf[4];
+		if (dataSource.fseek( dataOffset_ + (iIndex * 4), B3_SEEK_SET) == -1)
+			return false;
+		if (dataSource.fread(buf, 2*channels_ * 4, 1) != 1)
+			return false;
+		output = buf[0];
+		if (alpha > 0.0)
+	  	output += (alpha * (buf[channels_] - output));
+	}
+	
+	
+	if (dataType_ == B3_FLOAT64)
+	{
+		double buf[4];
+		if (dataSource.fseek( dataOffset_ + (iIndex * 8), B3_SEEK_SET) == -1)
+			return false;
+		if (dataSource.fread(buf, 2*channels_ * 8, 1) != 1)
+			return false;
+	
+	  output = buf[0];
+	  if (alpha > 0.0)
+	  	output += (alpha * (buf[channels_] - output));
+  }
+  
 	return output;
 }
 
-double b3ReadWavFile::tick(unsigned int channel, b3WavTicker *ticker)
+double b3ReadWavFile::tick(unsigned int channel, b3WavTicker *ticker, b3DataSource& dataSource)
 {
 	if (ticker->finished_) return 0.0;
 
 	if (ticker->time_ < 0.0 || ticker->time_ > (double)(this->m_numFrames - 1.0))
 	{
-		for (int i = 0; i < ticker->lastFrame_.size(); i++) ticker->lastFrame_[i] = 0.0;
+		for (int i = 0; i < ticker->lastFrame_.size(); i++) 
+		  ticker->lastFrame_[i] = 0.0;
 		ticker->finished_ = true;
 		return 0.0;
 	}
@@ -74,7 +179,7 @@ double b3ReadWavFile::tick(unsigned int channel, b3WavTicker *ticker)
 	if (interpolate_)
 	{
 		for (int i = 0; i < ticker->lastFrame_.size(); i++)
-			ticker->lastFrame_[i] = interpolate(tyme, i);
+			ticker->lastFrame_[i] = interpolate(tyme, i, dataSource);
 	}
 
 	// Increment time, which can be negative.
@@ -84,7 +189,7 @@ double b3ReadWavFile::tick(unsigned int channel, b3WavTicker *ticker)
 
 void b3ReadWavFile::resize()
 {
-	m_frames.resize(channels_ * m_numFrames);
+	//m_frames.resize(channels_ * m_numFrames);
 }
 
 b3WavTicker b3ReadWavFile::createWavTicker(double sampleRate)
@@ -271,7 +376,7 @@ bool b3ReadWavFile::getWavInfo(b3DataSource& dataSource)
 
 bool b3ReadWavFile::read(b3DataSource& dataSource, unsigned long startFrame, bool doNormalize)
 {
-	
+	#if 0
 	// Check the m_frames size.
 	unsigned long nFrames = this->m_numFrames;  //m_frames.frames();
 	if (nFrames == 0)
@@ -369,14 +474,14 @@ bool b3ReadWavFile::read(b3DataSource& dataSource, unsigned long startFrame, boo
 			return false;
 		if (dataSource.fread(buf, nSamples * 8, 1) != 1)
 			return false;
-		if (byteswap_)
-		{
-			double *ptr = buf;
-			for (i = nSamples - 1; i >= 0; i--)
-				b3Swap64((unsigned char *)ptr++);
-		}
-		for (i = nSamples - 1; i >= 0; i--)
-			m_frames[i] = buf[i];
+		//if (byteswap_)
+		//{
+		//	double *ptr = buf;
+		//	for (i = nSamples - 1; i >= 0; i--)
+		//		b3Swap64((unsigned char *)ptr++);
+		//}
+		//for (i = nSamples - 1; i >= 0; i--)
+		//	m_frames[i] = buf[i];
 	}
 	else if (dataType_ == B3_SINT8 && wavFile_)
 	{  // 8-bit WAV data is unsigned!
@@ -469,7 +574,7 @@ bool b3ReadWavFile::read(b3DataSource& dataSource, unsigned long startFrame, boo
 				m_frames[i] = (double)temp / 256;  // right shift without affecting the sign bit
 		}
 	}
-
+#endif
 	// m_frames.setDataRate( fileDataRate_ );
 
 	return true;

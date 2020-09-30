@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include "btAlignedObjectArray.h"
+
 #define B3_SEEK_CUR    11
 #define B3_SEEK_END    12
 #define B3_SEEK_SET    10
@@ -67,6 +67,13 @@ struct FileDataSource : public b3DataSource
 struct MemoryDataSource : public b3DataSource
 {
 
+  MemoryDataSource()
+  :m_data(),
+  m_numBytes(0),
+	m_currentAddress(0)
+  {
+    
+  }
 	MemoryDataSource(const char* data, int numBytes)
 		:m_data(data),
 		m_numBytes(numBytes),
@@ -160,14 +167,14 @@ public:
 	b3ReadWavFile();
 	virtual ~b3ReadWavFile();
 
-	btAlignedObjectArray<double> m_frames;
+	//btAlignedObjectArray<double> m_frames;
 
 	bool getWavInfo(b3DataSource& dataSource);
 
 	void normalize(double peak);
 
-	double interpolate(double frame, unsigned int channel) const;
-	double tick(unsigned int channel, b3WavTicker *ticker);
+	double interpolate(double frame, unsigned int channel, b3DataSource& dataSource) const;
+	double tick(unsigned int channel, b3WavTicker *ticker, b3DataSource& dataSource);
 
 	void resize();
 

@@ -37,10 +37,10 @@ size_t file_cnt_=0, file_sel_=0;
 
 WavFileInfo             file_info_[kMaxFiles];
 int file_sizes[kMaxFiles];
+MemoryDataSource dataSources[kMaxFiles];
 #define WAV_FILENAME_MAX  256 /**< Maximum LFN (set to same in FatFs (ffconf.h) */
 int selected_file_index=0;
 int num_frames = -1;
-int num_channels = -2;
 std::string sd_debug_msg="no sdcard";
 
 
@@ -157,7 +157,7 @@ static void VerbCallback(float **in, float **out, size_t size)
           float ins[2]={sendL,sendR};
   	      float outs[2]={sendL,sendR};
          
-          wavFileReaders[selected_file_index].tick(0, &wavTickers[selected_file_index], (ctrlVal[0]-0.5)*4.0);
+          wavFileReaders[selected_file_index].tick(0, &wavTickers[selected_file_index], dataSources[selected_file_index]);//, (ctrlVal[0]-0.5)*4.0);
           out[0][i] = wavTickers[selected_file_index].lastFrame_[0];
           out[1][i] = wavTickers[selected_file_index].lastFrame_[1];
           //out[0][i] = 0;
@@ -294,25 +294,22 @@ int main(void)
                     UINT size = file_sizes[file_cnt_];
                     size_t bytesread;
                     memoryBuffer = (char*) custom_pool_allocate(size);
-                    UINT bytesRead;
-                    // Read the whole WAV file
-                    if(f_read(&SDFile,(void *)memoryBuffer,size,&bytesread) == FR_OK)
+                    if (memoryBuffer)
                     {
-                      memorySize = size;
-                      MemoryDataSource dataSource(memoryBuffer, memorySize);
-                      wavFileReaders[file_cnt_].getWavInfo(dataSource);
-                      num_frames = wavFileReaders[file_cnt_].getNumFrames();
-                      num_channels = wavFileReaders[file_cnt_].getNumChannels();
-
-                      wavFileReaders[file_cnt_].resize();
-                      if (wavFileReaders[file_cnt_].read(dataSource,0, true))
+                      UINT bytesRead;
+                      // Read the whole WAV file
+                      if(f_read(&SDFile,(void *)memoryBuffer,size,&bytesread) == FR_OK)
                       {
+                        memorySize = size;
+                        dataSources[file_cnt_] = MemoryDataSource(memoryBuffer, memorySize);
+                        wavFileReaders[file_cnt_].getWavInfo(dataSources[file_cnt_]);
+                        num_frames = wavFileReaders[file_cnt_].getNumFrames();
+                        wavFileReaders[file_cnt_].resize();
                         wavTickers[file_cnt_] = wavFileReaders[file_cnt_].createWavTicker(samplerate);
                         file_cnt_++;
                       }
-
+                      f_close(&SDFile);
                     }
-                    f_close(&SDFile);
                   }
                   
               }
