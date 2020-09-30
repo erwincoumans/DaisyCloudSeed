@@ -157,7 +157,7 @@ static void VerbCallback(float **in, float **out, size_t size)
           float ins[2]={sendL,sendR};
   	      float outs[2]={sendL,sendR};
          
-          wavFileReaders[selected_file_index].tick(0, &wavTickers[selected_file_index], dataSources[selected_file_index]);//, (ctrlVal[0]-0.5)*4.0);
+          wavFileReaders[selected_file_index].tick(0, &wavTickers[selected_file_index], dataSources[selected_file_index], (ctrlVal[0]-0.5)*4.0);
           out[0][i] = wavTickers[selected_file_index].lastFrame_[0];
           out[1][i] = wavTickers[selected_file_index].lastFrame_[1];
           //out[0][i] = 0;

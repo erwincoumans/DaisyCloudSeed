@@ -160,7 +160,7 @@ double b3ReadWavFile::interpolate(double frame, unsigned int channel, b3DataSour
 	return output;
 }
 
-double b3ReadWavFile::tick(unsigned int channel, b3WavTicker *ticker, b3DataSource& dataSource)
+double b3ReadWavFile::tick(unsigned int channel, b3WavTicker *ticker, b3DataSource& dataSource, double speed)
 {
 	if (ticker->finished_) return 0.0;
 
@@ -183,7 +183,7 @@ double b3ReadWavFile::tick(unsigned int channel, b3WavTicker *ticker, b3DataSour
 	}
 
 	// Increment time, which can be negative.
-	ticker->time_ += ticker->rate_;
+	ticker->time_ += ticker->rate_*speed;
 	return ticker->lastFrame_[channel];
 }
 
