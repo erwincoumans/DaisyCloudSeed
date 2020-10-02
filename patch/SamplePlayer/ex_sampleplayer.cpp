@@ -14,7 +14,7 @@ int samplerate;
 btAlignedObjectArray<int> bla;
 #include <string>
 
-#define kMaxFiles 8
+#define kMaxFiles 64
 
 b3ReadWavFile wavFileReaders[kMaxFiles];
 b3WavTicker wavTickers[kMaxFiles];
@@ -28,7 +28,7 @@ using namespace daisy;
 using namespace daisysp;
 
 static SdmmcHandler sd;
-
+float speed=1;
 
 //64 bytes should be enough
 char buf[64];
@@ -50,8 +50,8 @@ static float drylevel, send;
 
 bool gUpdateOled = true;
 bool gRisingEdge = true;
-
-#define CUSTOM_POOL_SIZE (48*1024*1024)
+bool gGateOut = false;
+#define CUSTOM_POOL_SIZE (64*1024*1024)
 
 DSY_SDRAM_BSS char custom_pool[CUSTOM_POOL_SIZE];
 
@@ -86,7 +86,7 @@ static void VerbCallback(float **in, float **out, size_t size)
     patch.UpdateAnalogControls();
     patch.DebounceControls();
 
-    if (patch.encoder.RisingEdge())
+    if (patch.encoder.RisingEdge() || patch.gate_input[DaisyPatch::GateInput::GATE_IN_1].Trig())
     {
       gRisingEdge = true;
     }
@@ -156,8 +156,13 @@ static void VerbCallback(float **in, float **out, size_t size)
           //verb.Process(sendL, sendR, &wetL, &wetR);
           float ins[2]={sendL,sendR};
   	      float outs[2]={sendL,sendR};
-         
-          wavFileReaders[selected_file_index].tick(0, &wavTickers[selected_file_index], dataSources[selected_file_index], (ctrlVal[0]-0.5)*4.0);
+          speed = (ctrlVal[0]-0.5)*4.0;
+          wavFileReaders[selected_file_index].tick(0, &wavTickers[selected_file_index], dataSources[selected_file_index], speed);
+          if (wavTickers[selected_file_index].finished_)
+          {
+            gGateOut=true;
+          }
+          
           out[0][i] = wavTickers[selected_file_index].lastFrame_[0];
           out[1][i] = wavTickers[selected_file_index].lastFrame_[1];
           //out[0][i] = 0;
@@ -199,13 +204,17 @@ void UpdateOled()
       patch.display.WriteString(buf, Font_7x10, true);
     } else
     {
+      int start = selected_file_index-2;
+      if (start<0)
+        start = 0;
       for (int i=0;i<4;i++)
       {
+        
         patch.display.SetCursor(0, 10+i*10);
-        const char* selected = (i==selected_file_index)? ">" : " ";
+        const char* selected = ((i+start)==selected_file_index)? ">" : " ";
         if (i<file_cnt_)
         {
-          test::sprintf(buf, "%s%s", selected, file_info_[i].name);
+          test::sprintf(buf, "%s%s", selected, file_info_[i+start].name);
         } else
         {
           test::sprintf(buf, " <empty>");
@@ -216,7 +225,9 @@ void UpdateOled()
       int nf = wavFileReaders[selected_file_index].getNumFrames();
       int sz = sizeof(signed short int);
       //test::sprintf(buf, "mem:%d", pool_index);//wavTickers[selected_file_index].time_);
-      test::sprintf(buf, "sr:%d", samplerate);//wavTickers[selected_file_index].time_);
+      float frac = nf? 100.*wavTickers[selected_file_index].time_/float(nf) : 0;
+      
+      test::sprintf(buf, "s:%.2f,%3.0f\%", speed, frac);//wavTickers[selected_file_index].time_);
       
       patch.display.WriteString(buf, Font_7x10, true);
       
@@ -235,7 +246,7 @@ int main(void)
     
     patch.Init();
     samplerate = patch.AudioSampleRate();
-
+    patch.DelayMs(200);
 
     lpParam.Init(patch.controls[3], 20, 20000, ::daisy::Parameter::LOGARITHMIC);
 
@@ -244,7 +255,7 @@ int main(void)
     char* cstr = &str[0];
     patch.display.WriteString(cstr, Font_7x10, true);
     patch.display.Update();
-    patch.DelayMs(1000);
+    
 
 
 
@@ -260,8 +271,10 @@ int main(void)
     sd.Init();
     // Init Fatfs
     dsy_fatfs_init();
+    patch.DelayMs(500);
     // Mount SD Card
     f_mount(&SDFatFS, SDPath, 1);
+    patch.DelayMs(500);
     // Open Dir and scan for files.
     if(f_opendir(&dir, SDPath) == FR_OK)
     {
@@ -306,12 +319,14 @@ int main(void)
                         num_frames = wavFileReaders[file_cnt_].getNumFrames();
                         wavFileReaders[file_cnt_].resize();
                         wavTickers[file_cnt_] = wavFileReaders[file_cnt_].createWavTicker(samplerate);
+                        //start each sound inactive
+                        wavTickers[file_cnt_].finished_ = true;
                         file_cnt_++;
                       }
-                      f_close(&SDFile);
+                      
                     }
+                    f_close(&SDFile);
                   }
-                  
               }
           }
           else
@@ -332,15 +347,26 @@ int main(void)
     while(1) 
     {
       
-      patch.DelayMs(100);
+      patch.DelayMs(10);
 
       if (gRisingEdge)
       {
+        
+        if (wavTickers[selected_file_index].time_<0)
+          wavTickers[selected_file_index].time_ = (double) (wavFileReaders[selected_file_index].getNumFrames()-1.0);
+        else
+          wavTickers[selected_file_index].time_ = 0;
         wavTickers[selected_file_index].finished_ = false;
-        wavTickers[selected_file_index].time_ = 0;
         gRisingEdge = false;
       }
 
+      if (gGateOut)
+      {
+         dsy_gpio_toggle(&patch.gate_output);
+         patch.DelayMs(1);
+         dsy_gpio_toggle(&patch.gate_output);
+         gGateOut = false;
+      }
       if (gUpdateOled)
       {
         UpdateOled();
