@@ -156,15 +156,15 @@ static void VerbCallback(float **in, float **out, size_t size)
           //verb.Process(sendL, sendR, &wetL, &wetR);
           float ins[2]={sendL,sendR};
   	      float outs[2]={sendL,sendR};
-          speed = (ctrlVal[0]-0.5)*4.0;
+          speed = (ctrlVal[0]-0.5)*2.0;
           wavFileReaders[selected_file_index].tick(0, &wavTickers[selected_file_index], dataSources[selected_file_index], speed);
           if (wavTickers[selected_file_index].finished_)
           {
             gGateOut=true;
           }
           
-          out[0][i] = wavTickers[selected_file_index].lastFrame_[0];
-          out[1][i] = wavTickers[selected_file_index].lastFrame_[1];
+          out[0][i] = wavTickers[selected_file_index].lastFrame_[0]*ctrlVal[1];
+          out[1][i] = wavTickers[selected_file_index].lastFrame_[1]*ctrlVal[1];
           //out[0][i] = 0;
           //out[1][i] = 0;
           
@@ -254,6 +254,22 @@ int main(void)
     std::string str = "SamplePlayer";
     char* cstr = &str[0];
     patch.display.WriteString(cstr, Font_7x10, true);
+    
+    test::sprintf(buf,"CTRL1 for speed");
+    patch.display.SetCursor(0,10);
+    patch.display.WriteString(buf, Font_6x8, true);
+    test::sprintf(buf,"CTRL2 for volume");
+    patch.display.SetCursor(0,20);
+    patch.display.WriteString(buf, Font_6x8, true);
+    test::sprintf(buf,"ENC to play & select");
+    patch.display.SetCursor(0,30);
+    patch.display.WriteString(buf, Font_6x8, true);
+    test::sprintf(buf,"GATE OUT to GATE IN1");
+    patch.display.SetCursor(0,40);
+    patch.display.WriteString(buf, Font_6x8, true);
+    test::sprintf(buf,"will loop sound");
+    patch.display.SetCursor(0,50);
+    patch.display.WriteString(buf, Font_6x8, true);
     patch.display.Update();
     
 
@@ -271,10 +287,10 @@ int main(void)
     sd.Init();
     // Init Fatfs
     dsy_fatfs_init();
-    patch.DelayMs(500);
+    patch.DelayMs(1000);
     // Mount SD Card
     f_mount(&SDFatFS, SDPath, 1);
-    patch.DelayMs(500);
+    patch.DelayMs(1000);
     // Open Dir and scan for files.
     if(f_opendir(&dir, SDPath) == FR_OK)
     {
