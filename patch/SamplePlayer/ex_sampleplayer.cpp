@@ -15,7 +15,7 @@ btAlignedObjectArray<int> bla;
 #include <string>
 
 #define kMaxFiles 64
-
+int active=0;
 b3ReadWavFile wavFileReaders[kMaxFiles];
 b3WavTicker wavTickers[kMaxFiles];
 namespace test {
@@ -145,33 +145,49 @@ static void VerbCallback(float **in, float **out, size_t size)
       
       for (size_t i = 0; i < size; i++)
       {
-         
-          // Read Inputs (only stereo in are used)
-          dryL = in[0][i]*drylevel;
-          dryR = in[1][i]*drylevel;
-
-          // Send Signal to Reverb
-          sendL = dryL * send;
-          sendR = dryR * send;
-          //verb.Process(sendL, sendR, &wetL, &wetR);
-          float ins[2]={sendL,sendR};
-  	      float outs[2]={sendL,sendR};
-          speed = (ctrlVal[0]-0.5)*2.0;
-          wavFileReaders[selected_file_index].tick(0, &wavTickers[selected_file_index], dataSources[selected_file_index], speed);
-          if (wavTickers[selected_file_index].finished_)
-          {
-            gGateOut=true;
-          }
-          
-          out[0][i] = wavTickers[selected_file_index].lastFrame_[0]*ctrlVal[1];
-          out[1][i] = wavTickers[selected_file_index].lastFrame_[1]*ctrlVal[1];
-          //out[0][i] = 0;
-          //out[1][i] = 0;
-          
-          // Out 3 and 4 are silent
-          out[2][i] = 0;
+  	      out[0][i] = 0.f;
+  	      out[1][i] = 0.f;
+  	      out[2][i] = 0;
           out[3][i] = 0;
+      }      
+  	  active=0;
+      speed = (ctrlVal[0]-0.5)*2.0;
+      {
+        for (int g=0;g<file_cnt_;g++)
+        {
+          //somewhere around 22-24 is the current maximum, so clamp at 20 active samples
+          if (!wavTickers[g].finished_ && active < 20)
+          {
+            active++;
+            float volume = ctrlVal[1]*1./12.;
+            if (!wavTickers[g].finished_)
+            {
+              wavFileReaders[g].tick(&wavTickers[g], dataSources[g], speed, volume, size, out[0], out[1]);
+
+              if (wavTickers[g].finished_)
+              {
+                if (g == selected_file_index)
+                  {
+                    gGateOut=true;
+                  } else
+                  {
+                    if (wavTickers[g].time_<0)
+                      wavTickers[g].time_ = (double) (wavFileReaders[g].getNumFrames()-1.0);
+                    else
+                      wavTickers[g].time_ = 0;
+                    wavTickers[g].finished_ = false;                
+                  }
+              }
+            }
+          }
+        }
       }
+      //out[0][i] = 0;
+      //out[1][i] = 0;
+      
+      // Out 3 and 4 are silent
+      
+      
     }
     else
     {
@@ -227,7 +243,7 @@ void UpdateOled()
       //test::sprintf(buf, "mem:%d", pool_index);//wavTickers[selected_file_index].time_);
       float frac = nf? 100.*wavTickers[selected_file_index].time_/float(nf) : 0;
       
-      test::sprintf(buf, "s:%.2f,%3.0f\%", speed, frac);//wavTickers[selected_file_index].time_);
+      test::sprintf(buf, "s:%.2f,%3.0f\%,a=%d", speed, frac, active);//wavTickers[selected_file_index].time_);
       
       patch.display.WriteString(buf, Font_7x10, true);
       
@@ -368,11 +384,17 @@ int main(void)
       if (gRisingEdge)
       {
         
-        if (wavTickers[selected_file_index].time_<0)
-          wavTickers[selected_file_index].time_ = (double) (wavFileReaders[selected_file_index].getNumFrames()-1.0);
-        else
-          wavTickers[selected_file_index].time_ = 0;
-        wavTickers[selected_file_index].finished_ = false;
+        if (!wavTickers[selected_file_index].finished_)
+        {
+          wavTickers[selected_file_index].finished_ = true;
+        } else
+        {
+          if (wavTickers[selected_file_index].time_<0)
+            wavTickers[selected_file_index].time_ = (double) (wavFileReaders[selected_file_index].getNumFrames()-1.0);
+          else
+            wavTickers[selected_file_index].time_ = 0;
+          wavTickers[selected_file_index].finished_ = false;
+        }
         gRisingEdge = false;
       }
 

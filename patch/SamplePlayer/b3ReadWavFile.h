@@ -173,9 +173,9 @@ public:
 
 	void normalize(double peak);
 
-	double interpolate(double frame, unsigned int channel, b3DataSource& dataSource) const;
-	double tick(unsigned int channel, b3WavTicker *ticker, b3DataSource& dataSource, double speed);
-
+    void interpolate(b3WavTicker *ticker, b3DataSource& dataSource, double speed, double volume, int size, float* out0, float* out1, int oIndex) const;
+	void tick(b3WavTicker *ticker, b3DataSource& dataSource, double speed, double volume, int size, float* out0, float* out1);
+	
 	void resize();
 
 	b3WavTicker createWavTicker(double sampleRate);
