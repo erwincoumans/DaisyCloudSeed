@@ -148,7 +148,24 @@ struct b3WavTicker
 	std::vector<double> lastFrame_;
 	bool finished_;
 	double time_;
+	double starttime_;
+	double endtime_;
 	double rate_;
+	double speed_;
+	int wavindex;
+	double env_volume()
+	{
+		double frac = 1. - (time_ - starttime_) / (endtime_ - starttime_);
+		return frac;
+	}
+
+	double env_volume2()
+	{
+		double frac = (time_ - starttime_) / (endtime_ - starttime_);
+		if (frac > 0.5)
+			return 1. - frac;
+		return frac;
+	}
 };
 
 class b3ReadWavFile
@@ -173,7 +190,7 @@ public:
 
 	void normalize(double peak);
 
-    void interpolate(b3WavTicker *ticker, b3DataSource& dataSource, double speed, double volume, int size, float* out0, float* out1, int oIndex) const;
+	void interpolate(b3WavTicker *ticker, b3DataSource& dataSource, double speed, double volume, int size, float* out0, float* out1, int oIndex) const;
 	void tick(b3WavTicker *ticker, b3DataSource& dataSource, double speed, double volume, int size, float* out0, float* out1);
 	
 	void resize();
@@ -183,6 +200,11 @@ public:
 	int getNumFrames() const
 	{
 		return m_numFrames;
+	}
+	
+	double getFileDataRate()
+	{
+	  return fileDataRate_;
 	}
 };
 

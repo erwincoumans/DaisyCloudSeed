@@ -202,7 +202,7 @@ void b3ReadWavFile::tick(b3WavTicker *ticker, b3DataSource& dataSource, double s
 {
 	if (ticker->finished_) 
 	  return;
-	if (ticker->time_ < 0.0 || ticker->time_ > (double)(this->m_numFrames - 1.0))
+	if (ticker->time_ < ticker->starttime_ || ticker->time_ > ticker->endtime_)
 	{
 		ticker->finished_ = true;
 		return;
@@ -212,7 +212,7 @@ void b3ReadWavFile::tick(b3WavTicker *ticker, b3DataSource& dataSource, double s
 	{
 	  interpolate(ticker, dataSource, speed, volume, size, out0, out1, xx);
 		ticker->time_ += ticker->rate_*speed;
-		if (ticker->time_ < 0.0 || ticker->time_ > (double)(this->m_numFrames - 1.0))
+		if (ticker->time_ < ticker->starttime_ || ticker->time_ > ticker->endtime_)
 		{
 			ticker->finished_ = true;
 			return;
@@ -230,8 +230,11 @@ b3WavTicker b3ReadWavFile::createWavTicker(double sampleRate)
 	b3WavTicker ticker;
 	ticker.lastFrame_.resize(this->channels_);
 	ticker.time_ = 0;
+	ticker.starttime_ = 0.;
+	ticker.endtime_ = (double)(this->m_numFrames - 1.0);
 	ticker.finished_ = false;
 	ticker.rate_ = fileDataRate_ / sampleRate;
+	ticker.speed_ = 1.;
 	return ticker;
 }
 
