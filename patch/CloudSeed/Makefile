@@ -2,8 +2,7 @@
 TARGET = ex_cloudseed
 
 # Sources
-CPP_SOURCES = ex_cloudseed.cpp
-
+CPP_SOURCES = cloudseed_main.cpp cloudseed_app.cpp
 # Library Locations
 LIBDAISY_DIR = ../../libdaisy
 DAISYSP_DIR = ../../DaisySP
