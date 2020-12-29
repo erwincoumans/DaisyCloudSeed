@@ -5,7 +5,7 @@ TARGET = daisy_bouquet
 FATFS_DIR = $(LIBDAISY_DIR)/Middlewares/Third_Party/FatFs/src
 
 # Sources
-CPP_SOURCES = daisy_bouquet_main.cpp dummy_app.cpp Granular/granular_synth_app.cpp SamplePlayer/sample_player_app.cpp SamplePlayer/b3ReadWavFile.cpp 
+CPP_SOURCES = daisy_bouquet_main.cpp dummy_app.cpp Granular/granular_synth_app.cpp SamplePlayer/sample_player_app.cpp SamplePlayer/b3ReadWavFile.cpp CloudyReverb/cloudyreverb_app.cpp
 
 
 C_SOURCES = $(FATFS_DIR)/diskio.c \
@@ -23,7 +23,6 @@ SYSTEM_FILES_DIR = $(LIBDAISY_DIR)/core
 include $(SYSTEM_FILES_DIR)/Makefile
 
 # FATFS dir contains fatfs itself, libdaisy sys folder contains ffconf 
-C_INCLUDES += -I$(FATFS_DIR) -I$(LIBDAISY_DIR)/src/sys
-
+C_INCLUDES += -I$(FATFS_DIR) -I$(LIBDAISY_DIR)/src/sys -I../eurorack
 
 

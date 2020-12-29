@@ -71,33 +71,27 @@ void CloudSeedApp::AudioTickCallback(float ctrlVal[4], float **in, float **out, 
 
   float send = 1.0;
   float drylevel = ctrlVal[0];
-  float dryL, dryR, wetL, wetR, sendL, sendR;
+  float dryL, dryR, sendL, sendR;
 
+  float ins[2*48];
+  float outs[2*48];
   for (size_t i = 0; i < size; i++)
   {
-     
       // Read Inputs (only stereo in are used)
-      dryL = in[0][i]*drylevel;
-      dryR = in[1][i]*drylevel;
-
-      // Send Signal to Reverb
-      sendL = dryL * send;
-      sendR = dryR * send;
-      
-      float ins[2]={sendL,sendR};
-      float outs[2]={sendL,sendR};
-      reverb->Process( ins, outs, 1);
-      wetL=outs[0];
-      wetR=outs[1];	
-
-
-      out[0][i] = outs[0];
-      out[1][i] = outs[1];
-
-      // Out 3 and 4 are just wet
-      out[2][i] = outs[0];
-      out[3][i] = outs[1];
+      ins[2*i] = in[0][i]*drylevel;
+      ins[2*i+1]= in[1][i]*drylevel;
   }
+  
+  reverb->Process( ins, outs, 48);
+  
+  for (size_t i = 0; i < size; i++)
+  {
+      out[0][i] = outs[i*2];
+      out[1][i] = outs[i*2+1];
+      // Out 3 and 4 are just wet
+      out[2][i] = 0;
+      out[3][i] = 0;
+    }
 }
   
 void CloudSeedApp::UpdateOled()

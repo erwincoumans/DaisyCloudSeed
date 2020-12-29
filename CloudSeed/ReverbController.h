@@ -20,7 +20,7 @@ namespace CloudSeed
 	class ReverbController
 	{
 	private:
-		static const int bufferSize = 16; // just make it huge by default...
+		static const int bufferSize = 48; // just make it huge by default...
 		int samplerate;
 
 		ReverbChannel channelL;
