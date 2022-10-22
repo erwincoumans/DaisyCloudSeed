@@ -64,6 +64,8 @@
 #define PRINTF_SUPPORT_FLOAT
 #endif
 
+#define PRINTF_DISABLE_SUPPORT_EXPONENTIAL 1
+
 // support for exponential floating point notation (%e/%g)
 // default: activated
 #ifndef PRINTF_DISABLE_SUPPORT_EXPONENTIAL
@@ -81,6 +83,8 @@
 #ifndef PRINTF_MAX_FLOAT
 #define PRINTF_MAX_FLOAT  1e9
 #endif
+
+#define PRINTF_DISABLE_SUPPORT_LONG_LONG 1
 
 // support for the long long types (%llu or %p)
 // default: activated
