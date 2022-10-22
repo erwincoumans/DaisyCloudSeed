@@ -48,7 +48,7 @@ class GranularSynthApp : public DaisySynthApp
   
   virtual void Exit();
   
-  virtual void AudioTickCallback(float ctrlVal[4], float **in, float **out, size_t size);
+  virtual void AudioTickCallback(float ctrlVal[4], const float *const*in, float **out, size_t size);
   
   virtual void UpdateOled();
   

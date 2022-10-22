@@ -64,6 +64,7 @@
 #define PRINTF_SUPPORT_FLOAT
 #endif
 
+#define PRINTF_DISABLE_SUPPORT_EXPONENTIAL 1
 // support for exponential floating point notation (%e/%g)
 // default: activated
 #ifndef PRINTF_DISABLE_SUPPORT_EXPONENTIAL
@@ -82,12 +83,14 @@
 #define PRINTF_MAX_FLOAT  1e9
 #endif
 
+#define PRINTF_DISABLE_SUPPORT_LONG_LONG 1
 // support for the long long types (%llu or %p)
 // default: activated
 #ifndef PRINTF_DISABLE_SUPPORT_LONG_LONG
 #define PRINTF_SUPPORT_LONG_LONG
 #endif
 
+#define PRINTF_DISABLE_SUPPORT_PTRDIFF_T 1
 // support for the ptrdiff_t type (%t)
 // ptrdiff_t is normally defined in <stddef.h> as long or long long type
 // default: activated

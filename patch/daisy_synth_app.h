@@ -16,7 +16,7 @@ class DaisySynthApp
   
   virtual void Exit() = 0;
   
-  virtual void AudioTickCallback(float ctrlVal[4], float **in, float **out, size_t size)=0;
+  virtual void AudioTickCallback(float ctrlVal[4], const float * const*in, float **out, size_t size)=0;
   
   virtual void UpdateOled() = 0;
   

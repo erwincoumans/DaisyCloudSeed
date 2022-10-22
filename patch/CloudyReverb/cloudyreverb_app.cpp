@@ -45,7 +45,7 @@ void CloudyReverbApp ::Exit()
   
 float prevCtrlVal[4] = {0};
 
-void CloudyReverbApp ::AudioTickCallback(float ctrlVal[4], float **in, float **out, size_t size)
+void CloudyReverbApp ::AudioTickCallback(float ctrlVal[4], const float * const*in, float **out, size_t size)
 {
     prevCtrlVal[0] = ctrlVal[0];
     float delta = 0.01;

@@ -1,6 +1,17 @@
 
 #include "sample_player_app.h"
 
+#include "daisysp.h"
+#include "fatfs.h"
+using namespace daisy;
+using namespace daisysp;
+
+extern FatFSInterface fsi;
+/** Global File object for working with test file */
+extern FIL SDFile;
+
+
+
 
 namespace test {
 #include "printf.h"
@@ -72,11 +83,14 @@ void SamplePlayerApp::loadWavFiles()
   char *  fn;
   int samplerate = m_patch.AudioSampleRate();
   m_patch.DelayMs(1000);
+  // Get a reference to the SD card file system
+  FATFS& fs = fsi.GetSDFileSystem();
+
   // Mount SD Card
-  f_mount(&SDFatFS, SDPath, 1);
+  f_mount(&fs, "/", 1);
   m_patch.DelayMs(1000);
   // Open Dir and scan for files.
-  if(f_opendir(&dir, SDPath) == FR_OK)
+  if(f_opendir(&dir, "/") == FR_OK)
   {
     m_sd_debug_msg = "sd: no files";
     do
@@ -142,7 +156,7 @@ void SamplePlayerApp::Exit()
 {
 }
   
-void SamplePlayerApp::AudioTickCallback(float ctrlVal[4], float **in, float **out, size_t size)
+void SamplePlayerApp::AudioTickCallback(float ctrlVal[4], const float *const*in, float **out, size_t size)
 {
   for (int i=0;i<4;i++)
   {

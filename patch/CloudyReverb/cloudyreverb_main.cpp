@@ -50,8 +50,8 @@ float ctrlVal[4]={1,1,1,1};
 
 void updateControls()
 {
-   patch.UpdateAnalogControls();
-   patch.DebounceControls();
+   patch.ProcessAnalogControls();
+   patch.ProcessDigitalControls();
 
    //the encoders are not precise and stop above 0 or below 1, 
    // so add some deadzone around 0 and 1
@@ -72,7 +72,7 @@ void updateControls()
     }
    
 }
-static void BouquetCallback(float **in, float **out, size_t size)
+static void BouquetCallback(const float *const *in, float **out, size_t size)
 {
   
      // read some controls

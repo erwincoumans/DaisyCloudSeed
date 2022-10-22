@@ -1,26 +1,33 @@
-///main entry point of DaisyBouquet
+///main entry point
 #include "daisysp.h"
 #include "daisy_patch.h"
-#include "cloudseed_app.h"
+#include "sample_player_app.h"
 
-
-
-namespace test {
-#include "../SamplePlayer/printf.h"
-#include "../SamplePlayer/printf.c"
-};
-
+#include "fatfs.h"
 
 using namespace daisy;
 using namespace daisysp;
 
 static DaisyPatch patch;
 ::daisy::Parameter lpParam;
+static SdmmcHandler sdcard;
+FatFSInterface fsi;
+/** Global File object for working with test file */
+FIL SDFile;
+
+char buf[64];
+#include <string>
+
+
+namespace test {
+#include "printf.h"
+#include "printf.c"
+};
 
 
 
-CloudSeedApp* gApp = 0;
-CloudSeedApp reverb_app(patch);
+DaisySynthApp* gApp = 0;
+SamplePlayerApp _app(patch, sdcard);
 
 
 bool gUpdateOled = true;
@@ -109,17 +116,25 @@ int main(void)
     lpParam.Init(patch.controls[3], 20, 20000, ::daisy::Parameter::LOGARITHMIC);
 
     //briefly display the module name
-    char* cstr = "CloudSeed Reverb";
+    std::string str = "Sample Player";
+    char* cstr = &str[0];
     patch.display.WriteString(cstr, Font_7x10, true);
     patch.display.Update();
-   // patch.DelayMs(1000);
+    patch.DelayMs(1000);
 
     patch.StartAdc();
-    
+   
+     // Init the hardware
+    SdmmcHandler::Config sd_cfg;
+    sd_cfg.Defaults();
+    sdcard.Init(sd_cfg);
+
+    // Link hardware and FatFS
+    fsi.Init(FatFSInterface::Config::MEDIA_SD); 
     
     gAudioStarted = true;
-    reverb_app.Init();
-    gApp = &reverb_app;
+    _app.Init();
+    gApp = &_app;
     patch.StartAudio(BouquetCallback);
           
     while(1) 

@@ -5,7 +5,7 @@
 #include "CloudSeed/cloudseed_app.h"
 #include "SamplePlayer/sample_player_app.h"
 #include "Granular/granular_synth_app.h"
-#include "CloudyReverb/cloudyreverb_app.h"
+//#include "CloudyReverb/cloudyreverb_app.h"
 #include <string>
 #include "fatfs.h"
 
@@ -21,16 +21,19 @@ using namespace daisysp;
 
 static DaisyPatch patch;
 ::daisy::Parameter lpParam;
-static SdmmcHandler sd_handler;
+static SdmmcHandler sdcard;
+FatFSInterface fsi;
+/** Global File object for working with test file */
+FIL SDFile;
 
 
 DaisySynthApp* gApp = 0;
 //CloudSeedApp cloud(patch);
-SamplePlayerApp player(patch, sd_handler);
-GranularSynthApp granular(patch, sd_handler);
-CloudyReverbApp reverb(patch);
+SamplePlayerApp player(patch, sdcard);
+GranularSynthApp granular(patch, sdcard);
+//CloudyReverbApp reverb(patch);
 DummyApp dummy3(patch, "dummy3");
-DaisySynthApp* gAvailableApps[4]={&player,&granular, &reverb,&dummy3};
+DaisySynthApp* gAvailableApps[4]={&player,&granular, &dummy3, &dummy3};// &reverb, &dummy3};
 
 
 bool gUpdateOled = true;
@@ -38,7 +41,7 @@ bool gRisingEdge = false;
 bool gAudioStarted = false;
 int menu_select=0;
 
-#define CUSTOM_POOL_SIZE (64*1024*1024)
+#define CUSTOM_POOL_SIZE (60*1024*1024)
 DSY_SDRAM_BSS char custom_pool[CUSTOM_POOL_SIZE];
 size_t pool_index = 0;
 int allocation_count = 0;
@@ -58,8 +61,8 @@ float ctrlVal[4]={1,1,1,1};
 
 void updateControls()
 {
-   patch.UpdateAnalogControls();
-   patch.DebounceControls();
+   patch.ProcessAnalogControls();
+   patch.ProcessDigitalControls();
 
    //the encoders are not precise and stop above 0 or below 1, 
    // so add some deadzone around 0 and 1
@@ -95,7 +98,7 @@ void updateControls()
       
     
 }
-static void BouquetCallback(float **in, float **out, size_t size)
+static void BouquetCallback(const float *const*in, float **out, size_t size)
 {
   
      // read some controls
@@ -168,11 +171,16 @@ int main(void)
     patch.DelayMs(1000);
 
     patch.StartAdc();
-    
-    sd_handler.Init();
+   
+    // Init the hardware
+    SdmmcHandler::Config sd_cfg;
+    sd_cfg.Defaults();
+    sdcard.Init(sd_cfg);
+
+    // Link hardware and FatFS
+    fsi.Init(FatFSInterface::Config::MEDIA_SD); 
      
-    // Init Fatfs
-    dsy_fatfs_init();
+
 
     while(1) 
     {

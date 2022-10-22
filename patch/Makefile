@@ -5,7 +5,7 @@ TARGET = daisy_bouquet
 FATFS_DIR = $(LIBDAISY_DIR)/Middlewares/Third_Party/FatFs/src
 
 # Sources
-CPP_SOURCES = daisy_bouquet_main.cpp dummy_app.cpp Granular/granular_synth_app.cpp SamplePlayer/sample_player_app.cpp SamplePlayer/b3ReadWavFile.cpp CloudyReverb/cloudyreverb_app.cpp
+CPP_SOURCES = daisy_bouquet_main.cpp dummy_app.cpp Granular/granular_synth_app.cpp SamplePlayer/sample_player_app.cpp SamplePlayer/b3ReadWavFile.cpp
 
 
 C_SOURCES = $(FATFS_DIR)/diskio.c \

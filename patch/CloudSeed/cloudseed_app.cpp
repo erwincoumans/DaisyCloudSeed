@@ -18,14 +18,10 @@ using namespace daisysp;
 CloudSeed::ReverbController* reverb = 0;
   
 CloudSeedApp::CloudSeedApp(daisy::DaisyPatch& patch)
-  :m_patch(patch),
-  m_name("CloudSeed")
+  :m_patch(patch)
 {
 }
 
-CloudSeedApp::~CloudSeedApp()
-{
-}
   
 void CloudSeedApp::Init()
 {
@@ -41,14 +37,10 @@ void CloudSeedApp::Init()
     //reverb->initFactory90sAreBack();  
 }
   
-void CloudSeedApp::Exit()
-{
-  delete reverb;
-}
   
 float prevCtrlVal[4] = {0};
 
-void CloudSeedApp::AudioTickCallback(float ctrlVal[4], float **in, float **out, size_t size)
+void CloudSeedApp::AudioTickCallback(float ctrlVal[4], const float * const*in, float **out, size_t size)
 {
     prevCtrlVal[0] = ctrlVal[0];
     float delta = 0.01;

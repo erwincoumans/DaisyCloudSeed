@@ -32,7 +32,7 @@ void DummyApp::Exit()
 {
 }
   
-void DummyApp::AudioTickCallback(float ctrlVal[4], float **in, float **out, size_t size)
+void DummyApp::AudioTickCallback(float ctrlVal[4], const float *const *in, float **out, size_t size)
 {
   for (int i=0;i<4;i++)
   {
